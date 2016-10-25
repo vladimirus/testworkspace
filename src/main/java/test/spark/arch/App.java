@@ -62,9 +62,9 @@ public class App {
         SVMModel svmModel = SVMWithSGD.train(trainingData.rdd(), numIterations);
         DecisionTreeModel treeModel = DecisionTree.train(trainingData.rdd(), Algo.Classification(), Entropy.instance(), maxTreeDepth);
 
-        System.out.println(lrModel.predict(Vectors.dense(5.0,3.0,1)));
-        System.out.println(svmModel.predict(Vectors.dense(5.0,3.0,1)));
-        System.out.println(treeModel.predict(Vectors.dense(5.0,3.0,1)));
+        System.out.println(lrModel.predict(Vectors.dense(5.0, 3.0, 1.0)));
+        System.out.println(svmModel.predict(Vectors.dense(5.0, 3.0, 1.0)));
+        System.out.println(treeModel.predict(Vectors.dense(5.0, 3.0, 1.0)));
     }
 
     private static void randomForestClassifier(JavaRDD<LabeledPoint> trainingData, JavaRDD<LabeledPoint> testData) {
@@ -90,7 +90,7 @@ public class App {
 
         System.out.println("Test Error: " + testErr);
         System.out.println("Learned classification forest model:\n" + model.toDebugString());
-        System.out.println(model.predict(Vectors.dense(3.0,3.0,1.0))); //thur , 300 plus row, 1 day
+        System.out.println(model.predict(Vectors.dense(3.0, 3.0, 1.0))); //thur , 300 plus row, 1 day
     }
 
     private static void randomForestRegressor(JavaRDD<LabeledPoint> trainingData, JavaRDD<LabeledPoint> testData) {
@@ -117,6 +117,6 @@ public class App {
 
         System.out.println("Test Mean Squared Error: " + testMSE);
         System.out.println("Learned regression forest model:\n" + model.toDebugString());
-        System.out.println(model.predict(Vectors.dense(5.0,381.0,1.0)));
+        System.out.println(model.predict(Vectors.dense(5.0, 381.0, 1.0)));
     }
 }
