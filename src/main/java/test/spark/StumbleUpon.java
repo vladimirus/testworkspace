@@ -1,22 +1,11 @@
 package test.spark;
 
+import static java.util.Arrays.stream;
+
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.ml.feature.LabeledPoint;
-import org.apache.spark.ml.linalg.Vector;
-import org.apache.spark.ml.linalg.Vectors;
-import org.apache.spark.sql.*;
-import org.apache.spark.sql.types.StructType;
-import scala.Function1;
-import scala.reflect.ClassTag;
-
-import java.util.Arrays;
-
-import static java.util.Arrays.stream;
-import static org.apache.spark.sql.Encoders.javaSerialization;
 
 public class StumbleUpon {
 
@@ -47,7 +36,8 @@ public class StumbleUpon {
             //something
 
             double[] features;
-            return new LabeledPoint(1.0, Vectors.dense(features));
+//            return new LabeledPoint(1.0, Vectors.dense(features));
+            return null;
         });
 
 
