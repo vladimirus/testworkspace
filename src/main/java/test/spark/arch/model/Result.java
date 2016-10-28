@@ -8,17 +8,20 @@ import lombok.ToString;
 @Getter
 @ToString
 public class Result<T> {
+    private Long age;
     private Integer dayOfWeek;
+    private Long rows;
     private Long rowNoDiff;
     private Long daysDiff;
     private T underlying;
     private Integer verdict;
 
     public String print() {
-        return dayOfWeek + "," + round(rowNoDiff) + "," + daysDiff + "," + verdict;
+        return age + "," + dayOfWeek + "," + round(rows) + "," + daysDiff + "," + verdict;
     }
 
-    private Long round(Long num) {
-        return ((num + 99) / 100 );
+    private Double round(Long num) {
+        return num / 1000000D;
+//        return ((num + 99) / 100 );
     }
 }
