@@ -17,11 +17,14 @@ public class Result<T> {
     private Integer verdict;
 
     public String print() {
-        return age + "," + dayOfWeek + "," + round(rows) + "," + daysDiff + "," + verdict;
+        return age + "," + dayOfWeek + "," + twoDecimals(round(rows)) + "," + daysDiff + "," + verdict;
     }
 
-    private Double round(Long num) {
-        return num / 1000000D;
-//        return ((num + 99) / 100 );
+    private Double round(Long value) {
+        return value / 1000000D;
+    }
+
+    private String twoDecimals(Double value) {
+        return String.format("%.2f", value);
     }
 }

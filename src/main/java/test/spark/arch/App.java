@@ -1,6 +1,5 @@
 package test.spark.arch;
 
-import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.of;
@@ -28,11 +27,9 @@ import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 import org.apache.spark.mllib.tree.model.RandomForestModel;
 import scala.Tuple2;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 public class App {
 
@@ -50,15 +47,12 @@ public class App {
                     Double label = doubles.remove(doubles.size() - 1);
                     double[] features = doubles.stream().mapToDouble(d -> d).toArray();
                     return new LabeledPoint(label, Vectors.dense(features));
-//                    return new LabeledPoint(features[1], Vectors.dense(features[0], features[2]));
                 }).randomSplit(new double[]{0.7, 0.3});
 
         JavaRDD<LabeledPoint> trainingData = splits[0].cache();
         JavaRDD<LabeledPoint> testData = splits[1].cache();
 
-        System.out.println(trainingData.count());
-
-        Vector vector = Vectors.dense(842,2,4,1);
+        Vector vector = Vectors.dense(847,2,4.20,1);
 
         of(
             randomForestClassifier(trainingData, testData).predict(vector),
