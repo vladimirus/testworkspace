@@ -1,20 +1,11 @@
 package test.spark.arch;
 
-import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Stream.of;
-import static test.spark.Utils.getResourceUrl;
-
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.mllib.classification.LogisticRegressionModel;
+import org.apache.spark.mllib.classification.ClassificationModel;
 import org.apache.spark.mllib.classification.LogisticRegressionWithSGD;
-import org.apache.spark.mllib.classification.SVMModel;
 import org.apache.spark.mllib.classification.SVMWithSGD;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
@@ -27,13 +18,19 @@ import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 import org.apache.spark.mllib.tree.model.RandomForestModel;
 import scala.Tuple2;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toList;
+import static test.spark.Utils.getResourceUrl;
 
 public class App {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         SparkConf conf = new SparkConf().setAppName("SparkTest").setMaster("local[*]");
         JavaSparkContext sc = new JavaSparkContext(conf);
 
@@ -49,40 +46,52 @@ public class App {
                     return new LabeledPoint(label, Vectors.dense(features));
                 }).randomSplit(new double[]{0.7, 0.3});
 
-        JavaRDD<LabeledPoint> trainingData = splits[0].cache();
-        JavaRDD<LabeledPoint> testData = splits[1].cache();
+        JavaRDD<LabeledPoint> training = splits[0].cache();
+        JavaRDD<LabeledPoint> test = splits[1].cache();
 
-        Vector vector = Vectors.dense(847,2,4.20,1);
+        Vector vector = Vectors.dense(835,2,4.19,1);
 
-        of(
-            randomForestClassifier(trainingData, testData).predict(vector),
-            randomForestRegressor(trainingData, testData).predict(vector),
-            logisticRegression(trainingData).predict(vector),
-            svm(trainingData).predict(vector),
-            decisionTree(trainingData).predict(vector)
-        ).forEach(s -> print().accept(s));
+        Collection<Tuple2<Double, Double>> list = Stream.<Function<Vector, Double>>of(
+                randomForestRegressor(training)::predict,
+                randomForestClassifier(training)::predict,
+                logisticRegression(training)::predict,
+                svm(training)::predict,
+                decisionTree(training)::predict
+        ).map(v -> {
+            try {
+                return new Tuple2<>(v.call(vector), meanSquaredError2(test, v));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }).collect(toList());
+
+        sc.stop();
+
+        list.forEach(print());
+
     }
 
-    private static Consumer<Double> print() {
+    private static <T> Consumer<T> print() {
         return System.out::println;
     }
 
-    private static DecisionTreeModel decisionTree(JavaRDD<LabeledPoint> trainingData) {
-        int maxTreeDepth = 20;
-        return DecisionTree.train(trainingData.rdd(), Algo.Classification(), Entropy.instance(), maxTreeDepth);
+    private static DecisionTreeModel decisionTree(JavaRDD<LabeledPoint> data) {
+        int maxTreeDepth = 30;
+        return DecisionTree.train(data.rdd(), Algo.Classification(), Entropy.instance(), maxTreeDepth);
     }
 
-    private static SVMModel svm(JavaRDD<LabeledPoint> trainingData) {
+    private static ClassificationModel svm(JavaRDD<LabeledPoint> data) {
         int numIterations = 100;
-        return SVMWithSGD.train(trainingData.rdd(), numIterations);
+        return SVMWithSGD.train(data.rdd(), numIterations);
     }
 
-    private static LogisticRegressionModel logisticRegression(JavaRDD<LabeledPoint> trainingData) {
+    private static ClassificationModel logisticRegression(JavaRDD<LabeledPoint> data) {
         int numIterations = 100;
-        return LogisticRegressionWithSGD.train(trainingData.rdd(), numIterations);
+        return LogisticRegressionWithSGD.train(data.rdd(), numIterations);
     }
 
-    private static RandomForestModel randomForestClassifier(JavaRDD<LabeledPoint> trainingData, JavaRDD<LabeledPoint> testData) {
+    private static RandomForestModel randomForestClassifier(JavaRDD<LabeledPoint> data) {
         Integer numClasses = 2;
         HashMap<Integer, Integer> categoricalFeaturesInfo = new HashMap<>();
         Integer numTrees = 3;
@@ -92,23 +101,10 @@ public class App {
         Integer maxBins = 32;
         Integer seed = 12345;
 
-        RandomForestModel model = RandomForest.trainClassifier(trainingData, numClasses,
-                categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins,
-                seed);
-
-        JavaPairRDD<Double, Double> predictionAndLabel = testData
-                .mapToPair((PairFunction<LabeledPoint, Double, Double>) p -> new Tuple2<>(model.predict(p.features()), p.label()));
-
-        Double testErr = 1.0 * predictionAndLabel
-                .filter((Function<Tuple2<Double, Double>, Boolean>) pl -> !pl._1().equals(pl._2()))
-                .count() / testData.count();
-
-        System.out.println("Test Error: " + testErr);
-        System.out.println("Learned classification forest model:\n" + model.toDebugString());
-        return model;
+        return RandomForest.trainClassifier(data, numClasses, categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins, seed);
     }
 
-    private static RandomForestModel randomForestRegressor(JavaRDD<LabeledPoint> trainingData, JavaRDD<LabeledPoint> testData) {
+    private static RandomForestModel randomForestRegressor(JavaRDD<LabeledPoint> data) {
         HashMap<Integer, Integer> categoricalFeaturesInfo = new HashMap<>();
         Integer numTrees = 20;
         String featureSubsetStrategy = "auto";
@@ -117,21 +113,12 @@ public class App {
         Integer maxBins = 32;
         Integer seed = 12345;
 
-        RandomForestModel model = RandomForest.trainRegressor(trainingData,
-                categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins,
-                seed);
+        return RandomForest.trainRegressor(data, categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins, seed);
+    }
 
-        JavaPairRDD<Double, Double> predictionAndLabel = testData
-                .mapToPair((PairFunction<LabeledPoint, Double, Double>) p -> new Tuple2<>(model.predict(p.features()), p.label()));
-
-        Double testMSE = predictionAndLabel
-                .map((Function<Tuple2<Double, Double>, Double>) pl -> {
-                    Double diff = pl._1() - pl._2();
-                    return diff * diff;
-                }).reduce((Function2<Double, Double, Double>) (a, b) -> a + b) / testData.count();
-
-        System.out.println("Test Mean Squared Error: " + testMSE);
-        System.out.println("Learned regression forest model:\n" + model.toDebugString());
-        return model;
+    private static Double meanSquaredError2(JavaRDD<LabeledPoint> data, Function<Vector, Double> predict) {
+        return (double)(data
+                .map(point -> predict.call(point.features()) == point.label() ? 1 : 0)
+                .reduce((a, b) -> a + b) / data.count());
     }
 }
