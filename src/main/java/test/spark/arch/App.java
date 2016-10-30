@@ -62,7 +62,7 @@ public class App {
         JavaRDD<LabeledPoint> training = splits[0].cache();
         JavaRDD<LabeledPoint> test = splits[1].cache();
 
-        Vector vector = scaler.transform(Vectors.dense(1611,1,1,4.0));
+        Vector vector = scaler.transform(Vectors.dense(1611,7,1,4.1));
 
         Collection<Tuple2<Double, String>> list = Stream.<Function<Vector, Double>>of(
                 randomForestRegressor(training)::predict,
@@ -105,9 +105,9 @@ public class App {
     }
 
     private static RandomForestModel randomForestClassifier(JavaRDD<LabeledPoint> data) {
-        Integer numClasses = 2;
+        Integer numClasses = 20;
         HashMap<Integer, Integer> categoricalFeaturesInfo = new HashMap<>();
-        Integer numTrees = 3;
+        Integer numTrees = 30;
         String featureSubsetStrategy = "auto";
         String impurity = "gini";
         Integer maxDepth = 4;
