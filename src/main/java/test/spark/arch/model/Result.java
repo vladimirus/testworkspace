@@ -17,7 +17,7 @@ public class Result<T> {
     private Integer verdict;
 
     public String print() {
-        return age + "," + dayOfWeek + "," + twoDecimals(round(rows)) + "," + daysDiff + "," + verdict;
+        return age + "," + dayOfWeek + "," + daysDiff + "," + twoDecimals(round(rows)) + "," + verdict;
     }
 
     private Double round(Long value) {

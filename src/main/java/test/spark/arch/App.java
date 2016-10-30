@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static test.spark.Utils.getResourceUrl;
@@ -49,9 +50,9 @@ public class App {
         JavaRDD<LabeledPoint> training = splits[0].cache();
         JavaRDD<LabeledPoint> test = splits[1].cache();
 
-        Vector vector = Vectors.dense(835,2,4.19,1);
+        Vector vector = Vectors.dense(835,2,1,4.19);
 
-        Collection<Tuple2<Double, Double>> list = Stream.<Function<Vector, Double>>of(
+        Collection<Tuple2<Double, String>> list = Stream.<Function<Vector, Double>>of(
                 randomForestRegressor(training)::predict,
                 randomForestClassifier(training)::predict,
                 logisticRegression(training)::predict,
@@ -59,7 +60,7 @@ public class App {
                 decisionTree(training)::predict
         ).map(v -> {
             try {
-                return new Tuple2<>(v.call(vector), meanSquaredError2(test, v));
+                return new Tuple2<>(v.call(vector), accuracy(test, v));
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
@@ -116,9 +117,9 @@ public class App {
         return RandomForest.trainRegressor(data, categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins, seed);
     }
 
-    private static Double meanSquaredError2(JavaRDD<LabeledPoint> data, Function<Vector, Double> predict) {
-        return (double)(data
+    private static String accuracy(JavaRDD<LabeledPoint> data, Function<Vector, Double> predict) {
+        return format("%.2f%%", (double)(data
                 .map(point -> predict.call(point.features()) == point.label() ? 1 : 0)
-                .reduce((a, b) -> a + b) / data.count());
+                .reduce((a, b) -> a + b)) / data.count() * 100);
     }
 }
