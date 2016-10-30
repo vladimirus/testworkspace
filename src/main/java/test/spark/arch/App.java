@@ -1,14 +1,20 @@
 package test.spark.arch;
 
+import lombok.val;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.classification.ClassificationModel;
+import org.apache.spark.mllib.classification.LogisticRegressionModel;
 import org.apache.spark.mllib.classification.LogisticRegressionWithSGD;
 import org.apache.spark.mllib.classification.SVMWithSGD;
+import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics;
+import org.apache.spark.mllib.feature.StandardScaler;
+import org.apache.spark.mllib.feature.StandardScalerModel;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
+import org.apache.spark.mllib.linalg.distributed.RowMatrix;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.tree.DecisionTree;
 import org.apache.spark.mllib.tree.RandomForest;
@@ -35,7 +41,7 @@ public class App {
         SparkConf conf = new SparkConf().setAppName("SparkTest").setMaster("local[*]");
         JavaSparkContext sc = new JavaSparkContext(conf);
 
-        JavaRDD<LabeledPoint>[] splits = sc.textFile(getResourceUrl("arch/Arch_Finance_parsed.txt"))
+        JavaRDD<LabeledPoint> data = sc.textFile(getResourceUrl("arch/Arch_Finance_parsed.txt"))
                 .map(line -> line.split(","))
                 .map(array -> {
                     List<Double> doubles = stream(array)
@@ -45,18 +51,24 @@ public class App {
                     Double label = doubles.remove(doubles.size() - 1);
                     double[] features = doubles.stream().mapToDouble(d -> d).toArray();
                     return new LabeledPoint(label, Vectors.dense(features));
-                }).randomSplit(new double[]{0.7, 0.3});
+                });
 
+        //scale
+        StandardScalerModel scaler = new StandardScaler(true, true).fit(data.map(LabeledPoint::features).rdd());
+        JavaRDD<LabeledPoint> scaled = data.map(lp -> new LabeledPoint(lp.label(), scaler.transform(lp.features())));
+
+        // split
+        JavaRDD<LabeledPoint>[] splits = scaled.randomSplit(new double[]{0.7, 0.3});
         JavaRDD<LabeledPoint> training = splits[0].cache();
         JavaRDD<LabeledPoint> test = splits[1].cache();
 
-        Vector vector = Vectors.dense(842,1,1,4.25);
+        Vector vector = scaler.transform(Vectors.dense(1611,1,1,4.0));
 
         Collection<Tuple2<Double, String>> list = Stream.<Function<Vector, Double>>of(
                 randomForestRegressor(training)::predict,
-                randomForestClassifier(training)::predict,
                 logisticRegression(training)::predict,
                 svm(training)::predict,
+                randomForestClassifier(training)::predict,
                 decisionTree(training)::predict
         ).map(v -> {
             try {

@@ -2,7 +2,7 @@ package test.spark.arch.printer;
 
 import test.spark.arch.model.Result;
 
-public class ClassificationPrinter implements Printer {
+public class SimplePrinter implements Printer {
     @Override
     public String print(Result result) {
         return result.getAge() + ","
@@ -17,6 +17,6 @@ public class ClassificationPrinter implements Printer {
     }
 
     private String twoDecimals(Double value) {
-        return String.format("%.2f", value);
+        return String.format("%.1f", value);
     }
 }

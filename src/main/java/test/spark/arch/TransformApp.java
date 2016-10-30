@@ -11,10 +11,12 @@ import test.spark.arch.model.FinanceFactory;
 import test.spark.arch.model.Previous;
 import test.spark.arch.model.Result;
 import test.spark.arch.printer.Printer;
-import test.spark.arch.printer.ClassificationPrinter;
+import test.spark.arch.printer.RowDiffPrinter;
+import test.spark.arch.printer.SimplePrinter;
 
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.stream.Stream;
 
@@ -41,7 +43,7 @@ public class TransformApp {
         return lines.stream()
                 .map(l -> {
                     Result result = Result.builder()
-                            .age(DAYS.between(LocalDate.parse("2014-07-07"), l.getLoaded()))
+                            .age(Long.valueOf(l.getLoaded().format(DateTimeFormatter.ofPattern("YYMM"))))
                             .dayOfWeek(l.getFilenameDate().getDayOfWeek().getValue())
                             .rows(l.getNoRows())
                             .rowNoDiff(l.getNoRows() - previous.get().map(Finance::getNoRows).orElse(l.getNoRows()))
@@ -56,13 +58,13 @@ public class TransformApp {
     }
 
     Collection<String> lines(Collection<Result> results) {
-        Printer printer = new ClassificationPrinter();
+        Printer printer = new SimplePrinter();
         return results.stream()
                 .filter(r -> !(r.getRowNoDiff() > 5000 || r.getRowNoDiff() < -3000))
                 .flatMap(r -> {
                     Pair<Long, Long> rowDiff = boundaries(r.getRowNoDiff());
                     Pair<Long, Long> rows = boundaries(r.getRows());
-                    Long age = DAYS.between(LocalDate.parse("2014-07-07"), ((Finance)r.getUnderlying()).getLoaded());
+                    Long age = r.getAge();
 
                     return Stream.of(
                             Result.builder().age(age).rows(rows.getLeft()).dayOfWeek(r.getDayOfWeek()).daysDiff(r.getDaysDiff()).rowNoDiff(rowDiff.getLeft()).verdict(0).build(),
