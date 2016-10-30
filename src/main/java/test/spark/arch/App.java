@@ -50,7 +50,7 @@ public class App {
         JavaRDD<LabeledPoint> training = splits[0].cache();
         JavaRDD<LabeledPoint> test = splits[1].cache();
 
-        Vector vector = Vectors.dense(835,2,1,4.19);
+        Vector vector = Vectors.dense(842,1,1,4.25);
 
         Collection<Tuple2<Double, String>> list = Stream.<Function<Vector, Double>>of(
                 randomForestRegressor(training)::predict,
