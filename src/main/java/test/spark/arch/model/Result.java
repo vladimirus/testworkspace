@@ -15,16 +15,4 @@ public class Result<T> {
     private Long daysDiff;
     private T underlying;
     private Integer verdict;
-
-    public String print() {
-        return age + "," + dayOfWeek + "," + daysDiff + "," + twoDecimals(round(rows)) + "," + verdict;
-    }
-
-    private Double round(Long value) {
-        return value / 1000000D;
-    }
-
-    private String twoDecimals(Double value) {
-        return String.format("%.2f", value);
-    }
 }

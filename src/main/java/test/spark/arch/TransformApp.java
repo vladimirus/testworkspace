@@ -2,7 +2,6 @@ package test.spark.arch;
 
 import static java.lang.Math.abs;
 import static java.time.temporal.ChronoUnit.DAYS;
-import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 import static test.spark.Utils.getResourceUrl;
 
@@ -11,10 +10,11 @@ import test.spark.arch.model.Finance;
 import test.spark.arch.model.FinanceFactory;
 import test.spark.arch.model.Previous;
 import test.spark.arch.model.Result;
+import test.spark.arch.printer.Printer;
+import test.spark.arch.printer.ClassificationPrinter;
 
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.stream.Stream;
 
@@ -56,7 +56,8 @@ public class TransformApp {
     }
 
     Collection<String> lines(Collection<Result> results) {
-         return results.stream()
+        Printer printer = new ClassificationPrinter();
+        return results.stream()
                 .filter(r -> !(r.getRowNoDiff() > 5000 || r.getRowNoDiff() < -3000))
                 .flatMap(r -> {
                     Pair<Long, Long> rowDiff = boundaries(r.getRowNoDiff());
@@ -69,7 +70,7 @@ public class TransformApp {
                             Result.builder().age(age).rows(rows.getRight()).dayOfWeek(r.getDayOfWeek()).daysDiff(r.getDaysDiff()).rowNoDiff(rowDiff.getRight()).verdict(0).build()
                     );
                 })
-                .map(Result::print)
+                .map(printer::print)
                 .collect(toList());
 
     }
